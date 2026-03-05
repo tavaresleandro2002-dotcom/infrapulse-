@@ -29,4 +29,4 @@ O dashboard lê esse JSON e mostra status da máquina.
 3. Abrir monitoring-dashboard.html
 ## Dashboard
 
-![Dashboard](image.png)
+![Dashboard](../image.png)
