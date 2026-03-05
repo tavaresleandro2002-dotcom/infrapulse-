@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>InfraPulse - Multi-Server</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body{
+    font-family: 'Inter', Arial, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color:white;
+    text-align:center;
+    padding:30px;
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+}
+
+body.light-mode {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    color: #0f172a;
+}
+
+h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 30px;
+    background: linear-gradient(135deg, #22c55e, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.card{
+    background: rgba(30, 41, 59, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding:25px;
+    border-radius:24px;
+    margin:auto;
+    max-width:600px;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    transition: transform 0.3s ease, background 0.3s;
+    margin-bottom: 20px;
+}
+
+.light-mode .card {
+    background: rgba(255,255,255,0.8);
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+/* Animações */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.card.critical-pulse {
+    animation: pulse 1s infinite;
+    border: 2px solid #ef4444;
+}
+
+.alerta-blink {
+    animation: blink 1s infinite;
+}
+
+.metrica {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin: 20px 0;
+    text-align: left;
+}
+
+.metrica-icon {
+    font-size: 28px;
+    min-width: 50px;
+    height: 50px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.metrica-info {
+    flex: 1;
+}
+
+.metrica-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.metrica-label {
+    color: #94a3b8;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.light-mode .metrica-label {
+    color: #475569;
+}
+
+.metrica-value {
+    color: white;
+    font-size: 18px;
+}
+
+.light-mode .metrica-value {
+    color: #0f172a;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+.progress-fill.cpu { background: linear-gradient(90deg, #22c55e, #4ade80); }
+.progress-fill.memoria { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+.progress-fill.disco { background: linear-gradient(90deg, #eab308, #facc15); }
+.progress-fill.temp { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+/* Barra de saúde colorida */
+.health-bar {
+    height: 30px;
+    border-radius: 15px;
+    background: linear-gradient(90deg, #ef4444, #f97316, #eab308, #22c55e);
+    transition: width 0.5s ease;
+    margin: 10px 0;
+}
+
+.status{
+    font-size:20px;
+    font-weight:600;
+    margin-top:20px;
+    padding:15px;
+    border-radius:12px;
+    text-align:center;
+}
+
+.ok{
+    color:#22c55e;
+    background:rgba(34,197,94,0.15);
+    border:1px solid rgba(34,197,94,0.3);
+}
+
+.critical{
+    color:#ef4444;
+    background:rgba(239,68,68,0.15);
+    border:1px solid rgba(239,68,68,0.3);
+}
+
+.warning{
+    color:#f97316;
+    background:rgba(249,115,22,0.15);
+    border:1px solid rgba(249,115,22,0.3);
+}
+
+.timestamp{
+    font-size:14px;
+    color:#94a3b8;
+    margin-top:20px;
+    padding-top:20px;
+    border-top:1px solid rgba(255,255,255,0.1);
+    font-weight:400;
+}
+
+.light-mode .timestamp {
+    color: #475569;
+    border-top:1px solid rgba(0,0,0,0.1);
+}
+
+.grafico-card {
+    margin-top: 25px;
+}
+
+.grafico-titulo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    font-size: 18px;
+    color: #94a3b8;
+}
+
+.grafico-titulo span {
+    color: white;
+    font-weight: 600;
+}
+
+.light-mode .grafico-titulo span {
+    color: #0f172a;
+}
+
+.botoes {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.btn, select {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.light-mode .btn, .light-mode select {
+    background: rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.1);
+    color: #0f172a;
+}
+
+.btn:hover, select:hover {
+    background: rgba(255,255,255,0.2);
+    transform: translateY(-2px);
+}
+
+select {
+    min-width: 200px;
+}
+
+.tabela-historico {
+    margin-top: 20px;
+    text-align: left;
+    overflow-x: auto;
+}
+
+.tabela-historico table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.tabela-historico th {
+    color: #94a3b8;
+    font-weight: 600;
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.tabela-historico td {
+    padding: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.light-mode .tabela-historico th,
+.light-mode .tabela-historico td {
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+.loading {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: #22c55e;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.estatisticas {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.estatistica-item {
+    background: rgba(255,255,255,0.05);
+    padding: 15px;
+    border-radius: 16px;
+}
+
+.estatistica-valor {
+    font-size: 24px;
+    font-weight: 700;
+    color: #22c55e;
+}
+
+.estatistica-label {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 5px;
+}
+
+.tendencia-indicator {
+    display: inline-block;
+    margin-left: 5px;
+    font-size: 12px;
+}
+
+.tendencia-subindo { color: #ef4444; }
+.tendencia-descendo { color: #22c55e; }
+.tendencia-estavel { color: #94a3b8; }
+
+/* Grid para múltiplos servidores */
+.servidores-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.servidor-card {
+    background: rgba(255,255,255,0.05);
+    padding: 15px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 2px solid transparent;
+}
+
+.servidor-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255,255,255,0.1);
+}
+
+.servidor-card.ativo {
+    border-color: #22c55e;
+    background: rgba(34,197,94,0.1);
+}
+
+.servidor-card.critical {
+    border-color: #ef4444;
+}
+
+.servidor-nome {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.servidor-status {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.tempo-real {
+    font-size: 12px;
+    color: #22c55e;
+    margin-left: 5px;
+}
+</style>
+
+</head>
+
+<body>
+
+<h2>⚡ InfraPulse Multi-Server</h2>
+
+<div class="botoes">
+    <select id="servidorSelect" class="btn" onchange="mudarServidor()">
+        <option value="web">🌐 Web Server (192.168.1.10)</option>
+        <option value="db">🗄️ Banco de Dados (192.168.1.20)</option>
+        <option value="storage">💾 Storage (192.168.1.30)</option>
+        <option value="cache">⚡ Cache (192.168.1.40)</option>
+    </select>
+    <button class="btn" onclick="exportarRelatorio()">📥 Exportar JSON</button>
+    <button class="btn" onclick="exportarPDF()">📄 Exportar PDF</button>
+    <button class="btn" onclick="resetarHistorico()">🔄 Reset</button>
+    <button class="btn" onclick="toggleTema()">🌓 Tema</button>
+    <button class="btn" onclick="testarAlerta()">🔔 Testar Alerta</button>
+    <span class="btn" id="loadingIndicator" style="display:none;"><span class="loading"></span> Coletando...</span>
+</div>
+
+<!-- Cards de servidores -->
+<div class="servidores-grid" id="servidoresGrid"></div>
+
+<div class="card" id="mainCard">
+    <h3 id="servidorNome">🌐 Web Server</h3>
+    <p id="servidorIP" style="color:#94a3b8; margin-bottom:20px;">192.168.1.10</p>
+    
+    <div class="metrica">
+        <div class="metrica-icon">🖥️</div>
+        <div class="metrica-info">
+            <div class="metrica-header">
+                <span class="metrica-label">CPU</span>
+                <span class="metrica-value"><span id="cpu">0</span>%</span>
+            </div>
+            <div class="progress-bar">
+                <div id="progressCPU" class="progress-fill cpu" style="width:0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="metrica">
+        <div class="metrica-icon">🧠</div>
+        <div class="metrica-info">
+            <div class="metrica-header">
+                <span class="metrica-label">Memória</span>
+                <span class="metrica-value"><span id="memoria">0</span>%</span>
+            </div>
+            <div class="progress-bar">
+                <div id="progressMemoria" class="progress-fill memoria" style="width:0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="metrica">
+        <div class="metrica-icon">💾</div>
+        <div class="metrica-info">
+            <div class="metrica-header">
+                <span class="metrica-label">Disco Livre</span>
+                <span class="metrica-value"><span id="disco">0</span>%</span>
+            </div>
+            <div class="progress-bar">
+                <div id="progressDisco" class="progress-fill disco" style="width:0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="metrica">
+        <div class="metrica-icon">🌡️</div>
+        <div class="metrica-info">
+            <div class="metrica-header">
+                <span class="metrica-label">Temperatura</span>
+                <span class="metrica-value"><span id="temperatura">0</span>°C</span>
+            </div>
+            <div class="progress-bar">
+                <div id="progressTemp" class="progress-fill temp" style="width:0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="metrica">
+        <div class="metrica-icon">⏱️</div>
+        <div class="metrica-info">
+            <div class="metrica-header">
+                <span class="metrica-label">Uptime</span>
+                <span class="metrica-value" id="uptime">0 dias</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="metrica">
+        <div class="metrica-icon">🔄</div>
+        <div class="metrica-info">
+            <div class="metrica-header">
+                <span class="metrica-label">Processos</span>
+                <span class="metrica-value" id="processos">0</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="metrica">
+        <div class="metrica-icon">📡</div>
+        <div class="metrica-info">
+            <div class="metrica-header">
+                <span class="metrica-label">Latência</span>
+                <span class="metrica-value" id="latencia">0 ms</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="metrica">
+        <div class="metrica-icon">🌐</div>
+        <div class="metrica-info">
+            <div class="metrica-header">
+                <span class="metrica-label">Rede</span>
+                <span class="metrica-value" id="rede">0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barra de saúde -->
+    <div style="margin: 20px 0;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span>💚 Health Score</span>
+            <span id="healthPercent">100%</span>
+        </div>
+        <div class="progress-bar" style="height: 30px;">
+            <div id="healthBar" class="health-bar" style="width:100%"></div>
+        </div>
+        <p id="healthText" style="margin-top: 10px; font-size: 14px;">Excelente</p>
+    </div>
+
+    <p class="timestamp">🕒 Última atualização: <span id="timestamp">---</span> <span id="tempoReal" class="tempo-real"></span></p>
+
+    <div id="status" class="status ok">✅ SISTEMA OK</div>
+</div>
+
+<div class="card grafico-card">
+    <div class="grafico-titulo">
+        <span>📈</span>
+        <h3>Histórico <span>CPU + Memória</span></h3>
+    </div>
+    <canvas id="graficoCombinado" style="max-height:200px; width:100%;"></canvas>
+    <div style="display: flex; gap: 20px; justify-content: center; margin-top: 10px;">
+        <span style="color:#22c55e">■ CPU</span>
+        <span style="color:#3b82f6">■ Memória</span>
+    </div>
+</div>
+
+<div class="card grafico-card">
+    <div class="grafico-titulo">
+        <span>💾</span>
+        <h3>Histórico <span>Disco</span></h3>
+    </div>
+    <canvas id="graficoDisco" style="max-height:200px; width:100%;"></canvas>
+</div>
+
+<div class="card grafico-card">
+    <div class="grafico-titulo">
+        <span>🌡️</span>
+        <h3>Histórico <span>Temperatura</span></h3>
+    </div>
+    <canvas id="graficoTemperatura" style="max-height:200px; width:100%;"></canvas>
+</div>
+
+<div class="card">
+    <h3>📊 Estatísticas</h3>
+    <div class="estatisticas">
+        <div class="estatistica-item">
+            <div class="estatistica-valor" id="mediaCPU">0%</div>
+            <div class="estatistica-label">Média CPU <span id="tendenciaCPU" class="tendencia-indicator">→</span></div>
+        </div>
+        <div class="estatistica-item">
+            <div class="estatistica-valor" id="picoCPU">0%</div>
+            <div class="estatistica-label">Pico CPU</div>
+        </div>
+        <div class="estatistica-item">
+            <div class="estatistica-valor" id="previsaoDisco">0 dias</div>
+            <div class="estatistica-label">Previsão Disco Cheio</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h3>📋 Últimas Atualizações</h3>
+    <div class="tabela-historico">
+        <table id="tabelaUpdates">
+            <thead>
+                <tr>
+                    <th>Hora</th>
+                    <th>CPU</th>
+                    <th>Memória</th>
+                    <th>Disco</th>
+                    <th>Temp</th>
+                </tr>
+            </thead>
+            <tbody id="tabelaBody">
+                <tr><td colspan="5">Aguardando dados...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// Configuração dos servidores
+const servidores = {
+    web: { nome: 'Web Server', ip: '192.168.1.10', cor: '#22c55e' },
+    db: { nome: 'Banco de Dados', ip: '192.168.1.20', cor: '#3b82f6' },
+    storage: { nome: 'Storage', ip: '192.168.1.30', cor: '#eab308' },
+    cache: { nome: 'Cache', ip: '192.168.1.40', cor: '#a855f7' }
+}
+
+let servidorAtual = 'web'
+let historicoCPU = {}
+let historicoMemoria = {}
+let historicoDisco = {}
+let historicoTemperatura = {}
+let historicoLabels = {}
+let tabelaUpdates = []
+let ultimaTemperatura = {}
+let alertaSonoro = null
+
+// Inicializar históricos por servidor
+Object.keys(servidores).forEach(servidor => {
+    historicoCPU[servidor] = []
+    historicoMemoria[servidor] = []
+    historicoDisco[servidor] = []
+    historicoTemperatura[servidor] = []
+    historicoLabels[servidor] = []
+    ultimaTemperatura[servidor] = 45
+})
+
+// Inicializar gráficos
+const ctxCombinado = document.getElementById('graficoCombinado').getContext('2d')
+const graficoCombinado = new Chart(ctxCombinado, {
+    type: 'line',
+    data: {
+        labels: historicoLabels[servidorAtual] || [],
+        datasets: [
+            {
+                label: 'CPU %',
+                data: historicoCPU[servidorAtual] || [],
+                borderColor: '#22c55e',
+                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                tension: 0.3,
+                pointRadius: 2,
+                fill: false
+            },
+            {
+                label: 'Memória %',
+                data: historicoMemoria[servidorAtual] || [],
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                tension: 0.3,
+                pointRadius: 2,
+                fill: false
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: { 
+                beginAtZero: true, 
+                max: 100, 
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                ticks: { color: '#94a3b8' }
+            },
+            x: { 
+                grid: { display: false },
+                ticks: { color: '#94a3b8', maxRotation: 45 }
+            }
+        },
+        plugins: { 
+            legend: { display: false },
+            tooltip: { mode: 'index', intersect: false }
+        }
+    }
+})
+
+const ctxDisco = document.getElementById('graficoDisco').getContext('2d')
+const graficoDisco = new Chart(ctxDisco, {
+    type: 'line',
+    data: {
+        labels: historicoLabels[servidorAtual] || [],
+        datasets: [{
+            label: 'Disco %',
+            data: historicoDisco[servidorAtual] || [],
+            borderColor: '#eab308',
+            backgroundColor: 'rgba(234, 179, 8, 0.1)',
+            tension: 0.3,
+            pointRadius: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: { 
+                beginAtZero: true, 
+                max: 100, 
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                ticks: { color: '#94a3b8' }
+            },
+            x: { 
+                grid: { display: false },
+                ticks: { color: '#94a3b8', maxRotation: 45 }
+            }
+        },
+        plugins: { 
+            legend: { display: false },
+            tooltip: { mode: 'index', intersect: false }
+        }
+    }
+})
+
+const ctxTemp = document.getElementById('graficoTemperatura').getContext('2d')
+const graficoTemperatura = new Chart(ctxTemp, {
+    type: 'line',
+    data: {
+        labels: historicoLabels[servidorAtual] || [],
+        datasets: [{
+            label: 'Temperatura °C',
+            data: historicoTemperatura[servidorAtual] || [],
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            tension: 0.3,
+            pointRadius: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: { 
+                min: 30, 
+                max: 80, 
+                grid: { color: 'rgba(255,255,255,0.1)' },
+                ticks: { color: '#94a3b8' }
+            },
+            x: { 
+                grid: { display: false },
+                ticks: { color: '#94a3b8', maxRotation: 45 }
+            }
+        },
+        plugins: { 
+            legend: { display: false }
+        }
+    }
+})
+
+// Funções auxiliares
+function calcularHealthScore(cpu, memoria, disco){
+    let score = 100
+    if(cpu > 80) score -= 30
+    if(memoria > 80) score -= 30
+    if(disco < 20) score -= 20
+    return Math.max(0, score)
+}
+
+function calcularTemperatura(servidor, cpu) {
+    const temperaturaAlvo = 35 + (cpu * 0.4)
+    ultimaTemperatura[servidor] = ultimaTemperatura[servidor] * 0.7 + temperaturaAlvo * 0.3
+    return Math.round(ultimaTemperatura[servidor])
+}
+
+function formatarUptime(segundos) {
+    const dias = Math.floor(segundos / 86400)
+    const horas = Math.floor((segundos % 86400) / 3600)
+    return `${dias}d ${horas}h`
+}
+
+function atualizarHealthBar(health) {
+    const bar = document.getElementById('healthBar')
+    const percent = document.getElementById('healthPercent')
+    const text = document.getElementById('healthText')
+    
+    bar.style.width = health + '%'
+    percent.innerText = health + '%'
+    
+    if(health >= 80) {
+        text.innerText = '🟢 Excelente'
+        text.style.color = '#22c55e'
+    } else if(health >= 60) {
+        text.innerText = '🟡 Bom'
+        text.style.color = '#eab308'
+    } else if(health >= 40) {
+        text.innerText = '🟠 Regular'
+        text.style.color = '#f97316'
+    } else {
+        text.innerText = '🔴 Crítico'
+        text.style.color = '#ef4444'
+    }
+}
+
+function calcularTendencia(servidor) {
+    const hist = historicoCPU[servidor] || []
+    if(hist.length < 5) return '→'
+    
+    const recente = hist.slice(-5)
+    const media = recente.reduce((a,b) => a + b, 0) / 5
+    const anterior = hist[hist.length - 5]
+    
+    if(media > anterior + 2) return '↑'
+    if(media < anterior - 2) return '↓'
+    return '→'
+}
+
+function atualizarTabela() {
+    const tbody = document.getElementById('tabelaBody')
+    tbody.innerHTML = ''
+    
+    tabelaUpdates.slice(0, 10).forEach(item => {
+        const row = tbody.insertRow()
+        row.insertCell().innerText = item.hora
+        row.insertCell().innerText = item.cpu + '%'
+        row.insertCell().innerText = item.memoria + '%'
+        row.insertCell().innerText = item.disco + '%'
+        row.insertCell().innerText = item.temp + '°C'
+    })
+}
+
+function atualizarEstatisticas(servidor) {
+    const hist = historicoCPU[servidor] || []
+    if(hist.length > 0) {
+        const media = hist.reduce((a,b) => a + b, 0) / hist.length
+        document.getElementById('mediaCPU').innerText = media.toFixed(1) + '%'
+        
+        const tendencia = calcularTendencia(servidor)
+        const tendenciaEl = document.getElementById('tendenciaCPU')
+        tendenciaEl.innerText = tendencia
+        tendenciaEl.className = 'tendencia-indicator ' + 
+            (tendencia === '↑' ? 'tendencia-subindo' : 
+             tendencia === '↓' ? 'tendencia-descendo' : 'tendencia-estavel')
+        
+        const pico = Math.max(...hist)
+        document.getElementById('picoCPU').innerText = pico + '%'
+        
+        const histDisco = historicoDisco[servidor] || []
+        if(histDisco.length > 1) {
+            const ultimo = histDisco[histDisco.length - 1]
+            const penultimo = histDisco[histDisco.length - 2]
+            const queda = penultimo - ultimo
+            if(queda > 0) {
+                const dias = Math.floor(ultimo / queda)
+                document.getElementById('previsaoDisco').innerText = dias + ' dias'
+            } else {
+                document.getElementById('previsaoDisco').innerText = '>30 dias'
+            }
+        }
+    }
+}
+
+function atualizarCardsServidores() {
+    const grid = document.getElementById('servidoresGrid')
+    grid.innerHTML = ''
+    
+    Object.entries(servidores).forEach(([id, info]) => {
+        const ultimoCPU = historicoCPU[id]?.length > 0 ? historicoCPU[id][historicoCPU[id].length - 1] : 0
+        const card = document.createElement('div')
+        card.className = `servidor-card ${id === servidorAtual ? 'ativo' : ''} ${ultimoCPU > 85 ? 'critical' : ''}`
+        card.onclick = () => {
+            servidorAtual = id
+            document.getElementById('servidorSelect').value = id
+            mudarServidor()
+        }
+        
+        card.innerHTML = `
+            <div class="servidor-nome">${info.nome}</div>
+            <div class="servidor-status">CPU: ${ultimoCPU}%</div>
+            <div class="servidor-status">${info.ip}</div>
+        `
+        grid.appendChild(card)
+    })
+}
+
+function mudarServidor() {
+    servidorAtual = document.getElementById('servidorSelect').value
+    const info = servidores[servidorAtual]
+    
+    document.getElementById('servidorNome').innerHTML = info.nome
+    document.getElementById('servidorIP').innerHTML = info.ip
+    
+    // Atualizar gráficos
+    graficoCombinado.data.labels = historicoLabels[servidorAtual] || []
+    graficoCombinado.data.datasets[0].data = historicoCPU[servidorAtual] || []
+    graficoCombinado.data.datasets[1].data = historicoMemoria[servidorAtual] || []
+    graficoCombinado.update()
+    
+    graficoDisco.data.labels = historicoLabels[servidorAtual] || []
+    graficoDisco.data.datasets[0].data = historicoDisco[servidorAtual] || []
+    graficoDisco.update()
+    
+    graficoTemperatura.data.labels = historicoLabels[servidorAtual] || []
+    graficoTemperatura.data.datasets[0].data = historicoTemperatura[servidorAtual] || []
+    graficoTemperatura.update()
+    
+    atualizarCardsServidores()
+    carregarDados() // Recarregar dados do servidor selecionado
+}
+
+function gerarDadosServidor(servidor) {
+    // Simula dados diferentes para cada servidor
+    const baseCPU = {
+        web: 45 + Math.random() * 30,
+        db: 60 + Math.random() * 25, // DB usa mais CPU
+        storage: 20 + Math.random() * 20, // Storage mais leve
+        cache: 30 + Math.random() * 25
+    }
+    
+    const baseMemoria = {
+        web: 50 + Math.random() * 30,
+        db: 70 + Math.random() * 20, // DB usa mais memória
+        storage: 40 + Math.random() * 25,
+        cache: 55 + Math.random() * 25
+    }
+    
+    const baseDisco = {
+        web: 60 + Math.random() * 30,
+        db: 45 + Math.random() * 30, // DB mais cheio
+        storage: 30 + Math.random() * 40, // Storage quase cheio
+        cache: 70 + Math.random() * 20
+    }
+    
+    const cpu = Math.min(99, Math.round(baseCPU[servidor]))
+    const memoria = Math.min(99, Math.round(baseMemoria[servidor]))
+    const discoLivre = Math.max(5, Math.min(95, Math.round(100 - baseDisco[servidor])))
+    
+    return {
+        CPU: cpu,
+        Memoria: memoria,
+        DiscoLivre: discoLivre,
+        RedeOK: Math.random() > 0.05, // 95% de chance de estar OK
+        Data: new Date().toLocaleString('pt-BR')
+    }
+}
+
+function testarAlerta() {
+    const health = 35
+    atualizarHealthBar(health)
+    document.getElementById('status').innerHTML = '🔴 ALERTA DE TESTE'
+    document.getElementById('status').className = 'status critical'
+    document.querySelector('.card').classList.add('critical-pulse')
+    
+    if(alertaSonoro) alertaSonoro.play()
+    
+    if(Notification.permission === 'granted') {
+        new Notification('🔔 Teste de Alerta', {
+            body: 'Sistema de alertas funcionando!',
+            icon: 'https://via.placeholder.com/64/22c55e/ffffff?text=!'
+        })
+    }
+}
+
+function enviarNotificacao(titulo, mensagem) {
+    if(Notification.permission === 'granted') {
+        new Notification(titulo, { 
+            body: mensagem,
+            icon: 'https://via.placeholder.com/64/22c55e/ffffff?text=IP'
+        })
+    } else if(Notification.permission !== 'denied') {
+        Notification.requestPermission()
+    }
+}
+
+function carregarDados() {
+    document.getElementById('loadingIndicator').style.display = 'inline-block'
+    
+    // Simular chamada API
+    setTimeout(() => {
+        const data = gerarDadosServidor(servidorAtual)
+        const temperatura = calcularTemperatura(servidorAtual, data.CPU)
+        const health = calcularHealthScore(data.CPU, data.Memoria, data.DiscoLivre)
+        
+        // Atualizar valores
+        document.getElementById("cpu").innerText = data.CPU
+        document.getElementById("progressCPU").style.width = data.CPU + "%"
+        
+        document.getElementById("memoria").innerText = data.Memoria
+        document.getElementById("progressMemoria").style.width = data.Memoria + "%"
+        
+        document.getElementById("disco").innerText = data.DiscoLivre
+        document.getElementById("progressDisco").style.width = data.DiscoLivre + "%"
+        
+        document.getElementById("temperatura").innerText = temperatura
+        document.getElementById("progressTemp").style.width = (temperatura / 70 * 100) + "%"
+        
+        // Uptime
+        if(!window.uptimeSegundos) window.uptimeSegundos = {}
+        if(!window.uptimeSegundos[servidorAtual]) {
+            window.uptimeSegundos[servidorAtual] = Math.floor(Math.random() * 86400 * 5)
+        }
+        window.uptimeSegundos[servidorAtual] += 5
+        document.getElementById("uptime").innerText = formatarUptime(window.uptimeSegundos[servidorAtual])
+        
+        // Processos
+        const processos = Math.floor(50 + (data.CPU * 1.5))
+        document.getElementById("processos").innerText = processos
+        
+        // Latência
+        if(!window.latenciaAtual) window.latenciaAtual = {}
+        if(!window.latenciaAtual[servidorAtual]) window.latenciaAtual[servidorAtual] = 25
+        window.latenciaAtual[servidorAtual] = window.latenciaAtual[servidorAtual] * 0.7 + (Math.random() * 30 + 10) * 0.3
+        document.getElementById("latencia").innerText = Math.round(window.latenciaAtual[servidorAtual]) + " ms"
+        
+        document.getElementById("rede").innerText = data.RedeOK ? "✅ OK" : "❌ Falha"
+        document.getElementById("timestamp").innerText = data.Data
+        
+        // Atualizar barra de saúde
+        atualizarHealthBar(health)
+        
+        // Adicionar ao histórico
+        historicoCPU[servidorAtual].push(data.CPU)
+        historicoMemoria[servidorAtual].push(data.Memoria)
+        historicoDisco[servidorAtual].push(data.DiscoLivre)
+        historicoTemperatura[servidorAtual].push(temperatura)
+        historicoLabels[servidorAtual].push(new Date().toLocaleTimeString())
+        
+        // Adicionar à tabela global
+        tabelaUpdates.unshift({
+            hora: new Date().toLocaleTimeString(),
+            cpu: data.CPU,
+            memoria: data.Memoria,
+            disco: data.DiscoLivre,
+            temp: temperatura
+        })
+        if(tabelaUpdates.length > 10) tabelaUpdates.pop()
+        
+        // Limitar histórico
+        if(historicoCPU[servidorAtual].length > 30) {
+            historicoCPU[servidorAtual].shift()
+            historicoMemoria[servidorAtual].shift()
+            historicoDisco[servidorAtual].shift()
+            historicoTemperatura[servidorAtual].shift()
+            historicoLabels[servidorAtual].shift()
+        }
+        
+        // Atualizar gráficos
+        graficoCombinado.data.labels = historicoLabels[servidorAtual]
+        graficoCombinado.data.datasets[0].data = historicoCPU[servidorAtual]
+        graficoCombinado.data.datasets[1].data = historicoMemoria[servidorAtual]
+        graficoCombinado.update()
+        
+        graficoDisco.data.labels = historicoLabels[servidorAtual]
+        graficoDisco.data.datasets[0].data = historicoDisco[servidorAtual]
+        graficoDisco.update()
+        
+        graficoTemperatura.data.labels = historicoLabels[servidorAtual]
+        graficoTemperatura.data.datasets[0].data = historicoTemperatura[servidorAtual]
+        graficoTemperatura.update()
+        
+        // Atualizar estatísticas e tabela
+        atualizarEstatisticas(servidorAtual)
+        atualizarTabela()
+        atualizarCardsServidores()
+        
+        // Alertas
+        const statusDiv = document.getElementById("status")
+        const mainCard = document.getElementById('mainCard')
+        
+        let alertaAtivo = false
+        
+        if(data.CPU > 85) {
+            statusDiv.innerHTML = `⚠️ CPU CRÍTICA (${data.CPU}%) - Health: ${health}%`
+            statusDiv.className = "status critical"
+            mainCard.classList.add('critical-pulse')
+            alertaAtivo = true
+            if(!window.alertaEnviado) {
+                enviarNotificacao('⚠️ ALERTA CRÍTICO', `CPU em ${data.CPU}% no ${servidores[servidorAtual].nome}`)
+                window.alertaEnviado = true
+                setTimeout(() => window.alertaEnviado = false, 60000)
+            }
+        }
+        else if(data.Memoria > 85) {
+            statusDiv.innerHTML = `⚠️ MEMÓRIA CRÍTICA (${data.Memoria}%) - Health: ${health}%`
+            statusDiv.className = "status critical"
+            mainCard.classList.add('critical-pulse')
+            alertaAtivo = true
+        }
+        else if(data.DiscoLivre < 15) {
+            statusDiv.innerHTML = `⚠️ DISCO BAIXO (${data.DiscoLivre}%) - Health: ${health}%`
+            statusDiv.className = "status warning"
+            mainCard.classList.remove('critical-pulse')
+        }
+        else if(temperatura > 70) {
+            statusDiv.innerHTML = `⚠️ TEMPERATURA ALTA (${temperatura}°C) - Health: ${health}%`
+            statusDiv.className = "status warning"
+            mainCard.classList.remove('critical-pulse')
+        }
+        else {
+            statusDiv.innerHTML = `✅ SISTEMA OK - Health: ${health}%`
+            statusDiv.className = "status ok"
+            mainCard.classList.remove('critical-pulse')
+        }
+        
+        if(!alertaAtivo) {
+            mainCard.classList.remove('critical-pulse')
+        }
+        
+        document.getElementById('loadingIndicator').style.display = 'none'
+    }, 500)
+}
+
+// Funções de exportação
+function exportarRelatorio() {
+    const dados = {
+        timestamp: new Date().toISOString(),
+        servidor: servidores[servidorAtual],
+        metricas: {
+            cpu: document.getElementById('cpu').innerText,
+            memoria: document.getElementById('memoria').innerText,
+            disco: document.getElementById('disco').innerText,
+            temperatura: document.getElementById('temperatura').innerText,
+            uptime: document.getElementById('uptime').innerText
+        },
+        historico: {
+            cpu: historicoCPU[servidorAtual],
+            memoria: historicoMemoria[servidorAtual],
+            disco: historicoDisco[servidorAtual],
+            labels: historicoLabels[servidorAtual]
+        }
+    }
+    
+    const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `infrapulse-${servidorAtual}-${new Date().toISOString().slice(0,10)}.json`
+    a.click()
+}
+
+function exportarPDF() {
+    const { jsPDF } = window.jspdf
+    const doc = new jsPDF()
+    
+    doc.setFontSize(18)
+    doc.text('Relatório InfraPulse', 20, 20)
+    
+    doc.setFontSize(14)
+    doc.text(`${servidores[servidorAtual].nome} - ${servidores[servidorAtual].ip}`, 20, 30)
+    
+    doc.setFontSize(12)
+    doc.text(`Data: ${new Date().toLocaleString('pt-BR')}`, 20, 40)
+    doc.text(`CPU: ${document.getElementById('cpu').innerText}%`, 20, 50)
+    doc.text(`Memória: ${document.getElementById('memoria').innerText}%`, 20, 60)
+    doc.text(`Disco Livre: ${document.getElementById('disco').innerText}%`, 20, 70)
+    doc.text(`Temperatura: ${document.getElementById('temperatura').innerText}°C`, 20, 80)
+    doc.text(`Uptime: ${document.getElementById('uptime').innerText}`, 20, 90)
+    
+    doc.save(`infrapulse-${servidorAtual}-relatorio.pdf`)
+}
+
+function resetarHistorico() {
+    if(confirm('Resetar histórico de gráficos para este servidor?')) {
+        historicoCPU[servidorAtual] = []
+        historicoMemoria[servidorAtual] = []
+        historicoDisco[servidorAtual] = []
+        historicoTemperatura[servidorAtual] = []
+        historicoLabels[servidorAtual] = []
+        tabelaUpdates = []
+        
+        graficoCombinado.data.labels = []
+        graficoCombinado.data.datasets[0].data = []
+        graficoCombinado.data.datasets[1].data = []
+        graficoCombinado.update()
+        
+        graficoDisco.data.labels = []
+        graficoDisco.data.datasets[0].data = []
+        graficoDisco.update()
+        
+        graficoTemperatura.data.labels = []
+        graficoTemperatura.data.datasets[0].data = []
+        graficoTemperatura.update()
+        
+        atualizarTabela()
+    }
+}
+
+function toggleTema() {
+    document.body.classList.toggle('light-mode')
+}
+
+// Inicializar
+document.addEventListener('DOMContentLoaded', () => {
+    // Inicializar cards
+    atualizarCardsServidores()
+    
+    // Solicitar permissão para notificações
+    if(Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        Notification.requestPermission()
+    }
+    
+    // Inicializar áudio (opcional)
+    try {
+        alertaSonoro = new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3')
+    } catch(e) {
+        console.log('Áudio não disponível')
+    }
+    
+    // Iniciar carregamento
+    carregarDados()
+    setInterval(carregarDados, 5000)
+    
+    // Atualizar tempo real
+    setInterval(() => {
+        const ultima = document.getElementById('timestamp').innerText
+        if(ultima !== '---') {
+            const diff = Math.floor((new Date() - new Date(ultima.split(' ').reverse().join('T'))) / 1000)
+            let texto = ''
+            if(diff < 60) texto = `${diff}s atrás`
+            else if(diff < 3600) texto = `${Math.floor(diff/60)}min atrás`
+            else texto = `${Math.floor(diff/3600)}h atrás`
+            document.getElementById('tempoReal').innerText = texto
+        }
+    }, 1000)
+})
+</script>
+
+</body>
+</html>
