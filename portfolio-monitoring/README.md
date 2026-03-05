@@ -27,4 +27,4 @@ O dashboard lê esse JSON e mostra status da máquina.
 1. Executar o script PowerShell
 2. Gerar o arquivo health.json
 3. Abrir monitoring-dashboard.html
-![Dashboard](images/image.png)
+![Dashboard](image.png)
