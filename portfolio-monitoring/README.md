@@ -1,17 +1,27 @@
 # InfraPulse - Infra Monitoring Dashboard
 
-Projeto de monitoramento de infraestrutura usando PowerShell + Dashboard Web.
+![Dashboard](gif_monitoramento.gif)
+
+Projeto de monitoramento de infraestrutura que coleta informações do sistema usando PowerShell e exibe os dados em um dashboard web.
 
 ## Tecnologias
 - PowerShell
 - HTML
 - JSON
 
-## O que o projeto faz
-Script coleta informações do sistema e gera um arquivo JSON.
-O dashboard lê esse JSON e mostra status da máquina.
+## Objetivo
+Simular um sistema simples de monitoramento de infraestrutura.  
+O script PowerShell coleta dados da máquina e gera um arquivo JSON que é lido pelo dashboard para mostrar o status do sistema.
 
-## Estrutura
+## Funcionalidades
+
+- Coleta de informações da máquina via PowerShell
+- Geração automática de arquivo JSON com status do sistema
+- Dashboard web para visualização das métricas
+- Estrutura simples de monitoramento de infraestrutura
+- Visualização rápida do status da máquina
+
+## Estrutura do projeto
 
 /scripts
 - health-check.ps1
@@ -22,11 +32,16 @@ O dashboard lê esse JSON e mostra status da máquina.
 /data
 - health.json
 
-## Como usar
+## Como executar
 
 1. Executar o script PowerShell
-2. Gerar o arquivo health.json
-3. Abrir monitoring-dashboard.html
-## Dashboard
 
-![Dashboard](../image.png)
+health-check.ps1
+
+2. O script irá gerar o arquivo:
+
+health.json
+
+3. Abrir o dashboard no navegador
+
+monitoring-dashboard.html
