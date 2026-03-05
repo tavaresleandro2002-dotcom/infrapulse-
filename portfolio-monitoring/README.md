@@ -1,7 +1,6 @@
 # InfraPulse - Infra Monitoring Dashboard
 
-![Dashboard](gif_monitoramento.gif)
-
+![Dashboard](../gif_monitoramento.gif)
 Projeto de monitoramento de infraestrutura que coleta informações do sistema usando PowerShell e exibe os dados em um dashboard web.
 
 ## Tecnologias
